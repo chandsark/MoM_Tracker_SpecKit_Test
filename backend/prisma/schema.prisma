@@ -1,0 +1,161 @@
+// Data model: specs/001-meeting-action-tracker/data-model.md
+// Enumerated values (status, severity, entity types) are stored as strings and validated by the
+// shared Zod enums in @mom/shared.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique // stored lower-cased
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  deactivatedAt DateTime?
+
+  sessions          Session[]
+  organizedMeetings Meeting[]            @relation("MeetingOrganizer")
+  deletedMeetings   Meeting[]            @relation("MeetingDeleter")
+  participations    MeetingParticipant[]
+  assignedItems     ActionItem[]         @relation("ActionItemAssignee")
+  createdItems      ActionItem[]         @relation("ActionItemCreator")
+  deletedItems      ActionItem[]         @relation("ActionItemDeleter")
+  comments          Comment[]
+  raisedIssues      Issue[]              @relation("IssueRaiser")
+  deletedIssues     Issue[]              @relation("IssueDeleter")
+  history           ChangeHistory[]
+}
+
+model Session {
+  id        String   @id // opaque random token, also the cookie value
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Meeting {
+  id              String    @id @default(cuid())
+  description     String
+  meetingDate     String // YYYY-MM-DD
+  organizerId     String
+  organizer       User      @relation("MeetingOrganizer", fields: [organizerId], references: [id])
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  deletedById     String?
+  deletedBy       User?     @relation("MeetingDeleter", fields: [deletedById], references: [id])
+  deletionBatchId String?
+
+  participants MeetingParticipant[]
+  actionItems  ActionItem[]
+
+  @@index([meetingDate])
+  @@index([organizerId])
+  @@index([deletedAt])
+  @@index([deletionBatchId])
+}
+
+model MeetingParticipant {
+  id           String  @id @default(cuid())
+  meetingId    String
+  meeting      Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?   @relation(fields: [userId], references: [id])
+  externalName String?
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+}
+
+model ActionItem {
+  id              String    @id @default(cuid())
+  meetingId       String
+  meeting         Meeting   @relation(fields: [meetingId], references: [id])
+  description     String
+  assigneeId      String
+  assignee        User      @relation("ActionItemAssignee", fields: [assigneeId], references: [id])
+  startDate       String // YYYY-MM-DD
+  dueDate         String // YYYY-MM-DD, >= startDate
+  status          String    @default("OPEN")
+  version         Int       @default(1)
+  createdById     String
+  createdBy       User      @relation("ActionItemCreator", fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  deletedById     String?
+  deletedBy       User?     @relation("ActionItemDeleter", fields: [deletedById], references: [id])
+  deletionBatchId String?
+
+  comments Comment[]
+  issues   Issue[]
+
+  @@index([meetingId])
+  @@index([assigneeId, status])
+  @@index([dueDate])
+  @@index([deletedAt])
+  @@index([deletionBatchId])
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  actionItemId String
+  actionItem   ActionItem @relation(fields: [actionItemId], references: [id])
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id])
+  body         String
+  createdAt    DateTime   @default(now())
+
+  @@index([actionItemId, createdAt])
+}
+
+model Issue {
+  id              String     @id @default(cuid())
+  actionItemId    String
+  actionItem      ActionItem @relation(fields: [actionItemId], references: [id])
+  title           String
+  description     String
+  severity        String
+  // Derived from severity (LOW=1 .. CRITICAL=4) so lists can sort by severity in the database.
+  severityRank    Int
+  status          String     @default("OPEN")
+  raisedById      String
+  raisedBy        User       @relation("IssueRaiser", fields: [raisedById], references: [id])
+  version         Int        @default(1)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+  deletedById     String?
+  deletedBy       User?      @relation("IssueDeleter", fields: [deletedById], references: [id])
+  deletionBatchId String?
+
+  @@index([actionItemId, status])
+  @@index([severity])
+  @@index([deletedAt])
+  @@index([deletionBatchId])
+}
+
+model ChangeHistory {
+  id         String   @id @default(cuid())
+  entityType String // MEETING | ACTION_ITEM | ISSUE
+  entityId   String
+  action     String // CREATE | UPDATE | DELETE | RESTORE
+  field      String?
+  oldValue   String?
+  newValue   String?
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}

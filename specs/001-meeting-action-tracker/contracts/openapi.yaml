@@ -1,0 +1,839 @@
+openapi: 3.1.0
+info:
+  title: MoM and Action Items Tracker API
+  version: 0.1.0
+  description: |
+    REST API for feature 001-meeting-action-tracker.
+    - All endpoints except /health, /auth/register and /auth/login require a session cookie (`sid`).
+    - All state-changing requests MUST send header `X-Requested-With: fetch` (CSRF guard).
+    - Errors use the `Error` schema; no stack traces are returned.
+    - Deleted (soft-deleted) records are excluded from every response unless stated otherwise.
+    - Authorization rules: see data-model.md "Authorization matrix".
+servers:
+  - url: /api
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Meetings
+  - name: ActionItems
+  - name: Comments
+  - name: Issues
+  - name: History
+  - name: Deleted
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness check (used by the end-to-end test server)
+      security: []
+      responses:
+        '200':
+          description: The API is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Self-register and start a session (FR-029)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Registered and signed in; sets `sid` cookie
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: Email already registered (code EMAIL_TAKEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Signed in; sets `sid` cookie
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Invalid credentials (code INVALID_CREDENTIALS; same message for unknown email)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Too many attempts
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Sign out and revoke the session
+      responses:
+        '204': { description: Signed out; cookie cleared }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Search active registered users (for participant / assignee pickers)
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/UserRef' } }
+                  total: { type: integer }
+
+  /meetings:
+    get:
+      tags: [Meetings]
+      summary: List / filter meetings (FR-017)
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: participantId, in: query, schema: { type: string } }
+        - { name: q, in: query, description: Keyword in description, schema: { type: string, maxLength: 100 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Page of meetings, newest meetingDate first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/MeetingSummary' } }
+                  total: { type: integer }
+    post:
+      tags: [Meetings]
+      summary: Create meeting; caller becomes organizer (FR-001, FR-002)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeetingCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /meetings/{meetingId}:
+    parameters: [ { $ref: '#/components/parameters/MeetingId' } ]
+    get:
+      tags: [Meetings]
+      summary: Meeting detail
+      responses:
+        '200':
+          description: Meeting
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Meetings]
+      summary: Update meeting (organizer only, FR-003)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeetingUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+    delete:
+      tags: [Meetings]
+      summary: Soft-delete meeting and all its action items and issues (organizer only, FR-025/028)
+      parameters:
+        - { name: version, in: query, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+
+  /meetings/{meetingId}/deletion-impact:
+    parameters: [ { $ref: '#/components/parameters/MeetingId' } ]
+    get:
+      tags: [Meetings]
+      summary: Dependent records that a delete would affect (for the confirmation dialog)
+      responses:
+        '200':
+          description: Impact
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeletionImpact' }
+
+  /meetings/{meetingId}/traceability:
+    parameters: [ { $ref: '#/components/parameters/MeetingId' } ]
+    get:
+      tags: [Meetings]
+      summary: Meeting → action items → issues hierarchy with summary (FR-021, FR-023)
+      parameters:
+        - $ref: '#/components/parameters/Today'
+      responses:
+        '200':
+          description: Traceability tree
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Traceability' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /meetings/{meetingId}/action-items:
+    parameters: [ { $ref: '#/components/parameters/MeetingId' } ]
+    post:
+      tags: [ActionItems]
+      summary: Create action item in meeting (organizer only, FR-004..FR-006)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionItemCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /action-items:
+    get:
+      tags: [ActionItems]
+      summary: List / filter action items (FR-018, FR-020, FR-027)
+      parameters:
+        - $ref: '#/components/parameters/ActionItemKeyword'
+        - { name: assigneeId, in: query, description: "Use `me` for my action items", schema: { type: string } }
+        - { name: status, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/ActionItemStatus' } } }
+        - { name: meetingId, in: query, schema: { type: string } }
+        - { name: dueFrom, in: query, schema: { type: string, format: date } }
+        - { name: dueTo, in: query, schema: { type: string, format: date } }
+        - { name: overdue, in: query, schema: { type: boolean } }
+        - $ref: '#/components/parameters/Today'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Page of action items, earliest dueDate first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/ActionItem' } }
+                  total: { type: integer }
+
+  /action-items/export.csv:
+    get:
+      tags: [ActionItems]
+      summary: CSV of all action items matching the filters (FR-030; see csv-export.md)
+      parameters:
+        - $ref: '#/components/parameters/ActionItemKeyword'
+        - { name: assigneeId, in: query, schema: { type: string } }
+        - { name: status, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/ActionItemStatus' } } }
+        - { name: meetingId, in: query, schema: { type: string } }
+        - { name: dueFrom, in: query, schema: { type: string, format: date } }
+        - { name: dueTo, in: query, schema: { type: string, format: date } }
+        - { name: overdue, in: query, schema: { type: boolean } }
+        - $ref: '#/components/parameters/Today'
+      responses:
+        '200':
+          description: CSV file
+          content:
+            text/csv: { schema: { type: string } }
+
+  /action-items/{actionItemId}:
+    parameters: [ { $ref: '#/components/parameters/ActionItemId' } ]
+    get:
+      tags: [ActionItems]
+      summary: Action item detail including parent meeting ref, comments and issues (FR-022)
+      parameters: [ { $ref: '#/components/parameters/Today' } ]
+      responses:
+        '200':
+          description: Action item
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionItemDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [ActionItems]
+      summary: Update action item (organizer or assignee; reassignment organizer only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionItemUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: VERSION_CONFLICT (with current record) or OPEN_ISSUES_CONFIRMATION_REQUIRED (FR-016)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      tags: [ActionItems]
+      summary: Soft-delete action item and its issues (organizer only)
+      parameters:
+        - { name: version, in: query, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+
+  /action-items/{actionItemId}/comments:
+    parameters: [ { $ref: '#/components/parameters/ActionItemId' } ]
+    post:
+      tags: [Comments]
+      summary: Add comment (organizer, assignee, registered participant; FR-011)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 1000 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /action-items/{actionItemId}/issues:
+    parameters: [ { $ref: '#/components/parameters/ActionItemId' } ]
+    post:
+      tags: [Issues]
+      summary: Raise issue (organizer, assignee, registered participant; FR-012)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Issue' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /issues:
+    get:
+      tags: [Issues]
+      summary: List / filter issues (FR-019, FR-020)
+      parameters:
+        - { name: status, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/IssueStatus' } } }
+        - { name: severity, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/IssueSeverity' } } }
+        - { name: assigneeId, in: query, description: "Assignee of the parent action item; `me` allowed", schema: { type: string } }
+        - { name: actionItemId, in: query, schema: { type: string } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Page of issues, highest severity first then newest
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Issue' } }
+                  total: { type: integer }
+
+  /issues/export.csv:
+    get:
+      tags: [Issues]
+      summary: CSV of all issues matching the filters (FR-030; see csv-export.md)
+      parameters:
+        - { name: status, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/IssueStatus' } } }
+        - { name: severity, in: query, style: form, explode: false, schema: { type: array, items: { $ref: '#/components/schemas/IssueSeverity' } } }
+        - { name: assigneeId, in: query, schema: { type: string } }
+        - { name: actionItemId, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: CSV file
+          content:
+            text/csv: { schema: { type: string } }
+
+  /issues/{issueId}:
+    parameters: [ { $ref: '#/components/parameters/IssueId' } ]
+    get:
+      tags: [Issues]
+      summary: Issue detail with parent action item and meeting refs (FR-022)
+      responses:
+        '200':
+          description: Issue
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Issue' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Issues]
+      summary: Update issue (organizer or assignee of parent item; FR-015)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Issue' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+    delete:
+      tags: [Issues]
+      summary: Soft-delete issue (organizer only)
+      parameters:
+        - { name: version, in: query, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /history/{entityType}/{entityId}:
+    get:
+      tags: [History]
+      summary: Change history for a record, oldest first (FR-010, FR-015)
+      parameters:
+        - { name: entityType, in: path, required: true, schema: { type: string, enum: [meeting, action-item, issue] } }
+        - { name: entityId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HistoryEntry' }
+
+  /deleted:
+    get:
+      tags: [Deleted]
+      summary: Soft-deleted records in meetings organized by the caller (FR-028)
+      responses:
+        '200':
+          description: Deleted records grouped by deletion batch
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeletedRecord' }
+
+  /deleted/{entityType}/{entityId}/restore:
+    post:
+      tags: [Deleted]
+      summary: Restore a record and everything deleted with it (organizer only)
+      parameters:
+        - { name: entityType, in: path, required: true, schema: { type: string, enum: [meeting, action-item, issue] } }
+        - { name: entityId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Restored }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: PARENT_DELETED — restore the parent first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sid
+
+  parameters:
+    MeetingId: { name: meetingId, in: path, required: true, schema: { type: string } }
+    ActionItemId: { name: actionItemId, in: path, required: true, schema: { type: string } }
+    IssueId: { name: issueId, in: path, required: true, schema: { type: string } }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+    Today:
+      name: today
+      in: query
+      description: Client's local calendar date, used to compute `isOverdue` (defaults to server UTC date)
+      schema: { type: string, format: date }
+    ActionItemKeyword:
+      name: q
+      in: query
+      description: Keyword in action item description
+      schema: { type: string, maxLength: 100 }
+
+  responses:
+    ValidationError:
+      description: VALIDATION_ERROR with per-field details
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: UNAUTHENTICATED
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: FORBIDDEN — caller lacks permission (see authorization matrix)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: NOT_FOUND (also returned for soft-deleted records)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    VersionConflict:
+      description: VERSION_CONFLICT — record changed since it was loaded; `details.current` holds the latest version
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [VALIDATION_ERROR, UNAUTHENTICATED, INVALID_CREDENTIALS, FORBIDDEN, NOT_FOUND,
+                     EMAIL_TAKEN, VERSION_CONFLICT, OPEN_ISSUES_CONFIRMATION_REQUIRED,
+                     PARENT_DELETED, RATE_LIMITED, INTERNAL]
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+
+    ActionItemStatus: { type: string, enum: [OPEN, IN_PROGRESS, BLOCKED, DONE, CANCELLED] }
+    IssueStatus: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED] }
+    IssueSeverity: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+    Date: { type: string, format: date, pattern: '^\d{4}-\d{2}-\d{2}$' }
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 10, maxLength: 200 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+    UserRef:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        active: { type: boolean }
+
+    ParticipantInput:
+      type: object
+      additionalProperties: false
+      description: Exactly one of userId / externalName
+      properties:
+        userId: { type: string }
+        externalName: { type: string, minLength: 1, maxLength: 100 }
+    Participant:
+      type: object
+      properties:
+        id: { type: string }
+        user: { $ref: '#/components/schemas/UserRef' }
+        externalName: { type: string }
+
+    MeetingCreate:
+      type: object
+      additionalProperties: false
+      required: [description, meetingDate, participants]
+      properties:
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        meetingDate: { $ref: '#/components/schemas/Date' }
+        participants:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/ParticipantInput' }
+    MeetingUpdate:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1 }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        meetingDate: { $ref: '#/components/schemas/Date' }
+        participants:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/ParticipantInput' }
+    MeetingSummary:
+      type: object
+      properties:
+        id: { type: string }
+        description: { type: string }
+        meetingDate: { $ref: '#/components/schemas/Date' }
+        organizer: { $ref: '#/components/schemas/UserRef' }
+        participantCount: { type: integer }
+        actionItemCount: { type: integer }
+        openIssueCount: { type: integer }
+    Meeting:
+      allOf:
+        - $ref: '#/components/schemas/MeetingSummary'
+        - type: object
+          properties:
+            version: { type: integer }
+            participants: { type: array, items: { $ref: '#/components/schemas/Participant' } }
+            permissions: { $ref: '#/components/schemas/Permissions' }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    Permissions:
+      type: object
+      description: What the current user may do on this record (drives UI controls)
+      properties:
+        canEdit: { type: boolean }
+        canReassign: { type: boolean }
+        canComment: { type: boolean }
+        canRaiseIssue: { type: boolean }
+        canDelete: { type: boolean }
+
+    MeetingRef:
+      type: object
+      properties:
+        id: { type: string }
+        description: { type: string }
+        meetingDate: { $ref: '#/components/schemas/Date' }
+
+    ActionItemCreate:
+      type: object
+      additionalProperties: false
+      required: [description, assigneeId, startDate, dueDate]
+      properties:
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        assigneeId: { type: string }
+        startDate: { $ref: '#/components/schemas/Date' }
+        dueDate: { $ref: '#/components/schemas/Date', description: 'MUST be >= startDate' }
+        status: { $ref: '#/components/schemas/ActionItemStatus' }
+    ActionItemUpdate:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1 }
+        description: { type: string, minLength: 1, maxLength: 2000, description: organizer only }
+        assigneeId: { type: string, description: organizer only (reassign) }
+        startDate: { $ref: '#/components/schemas/Date' }
+        dueDate: { $ref: '#/components/schemas/Date' }
+        status: { $ref: '#/components/schemas/ActionItemStatus' }
+        confirmOpenIssues: { type: boolean, description: Required true to set DONE while open issues exist }
+    ActionItem:
+      type: object
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        meeting: { $ref: '#/components/schemas/MeetingRef' }
+        description: { type: string }
+        assignee: { $ref: '#/components/schemas/UserRef' }
+        startDate: { $ref: '#/components/schemas/Date' }
+        dueDate: { $ref: '#/components/schemas/Date' }
+        status: { $ref: '#/components/schemas/ActionItemStatus' }
+        isOverdue: { type: boolean }
+        needsReassignment: { type: boolean }
+        openIssueCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ActionItemDetail:
+      allOf:
+        - $ref: '#/components/schemas/ActionItem'
+        - type: object
+          properties:
+            permissions: { $ref: '#/components/schemas/Permissions' }
+            comments: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+            issues: { type: array, items: { $ref: '#/components/schemas/Issue' } }
+
+    Comment:
+      type: object
+      properties:
+        id: { type: string }
+        author: { $ref: '#/components/schemas/UserRef' }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    IssueCreate:
+      type: object
+      additionalProperties: false
+      required: [title, description, severity]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        severity: { $ref: '#/components/schemas/IssueSeverity' }
+    IssueUpdate:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        severity: { $ref: '#/components/schemas/IssueSeverity' }
+        status: { $ref: '#/components/schemas/IssueStatus' }
+    Issue:
+      type: object
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        severity: { $ref: '#/components/schemas/IssueSeverity' }
+        status: { $ref: '#/components/schemas/IssueStatus' }
+        raisedBy: { $ref: '#/components/schemas/UserRef' }
+        actionItem:
+          type: object
+          properties:
+            id: { type: string }
+            description: { type: string }
+            assignee: { $ref: '#/components/schemas/UserRef' }
+        meeting: { $ref: '#/components/schemas/MeetingRef' }
+        permissions: { $ref: '#/components/schemas/Permissions' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Traceability:
+      type: object
+      properties:
+        meeting: { $ref: '#/components/schemas/Meeting' }
+        summary:
+          type: object
+          properties:
+            actionItemsByStatus:
+              type: object
+              additionalProperties: { type: integer }
+            overdueCount: { type: integer }
+            openIssueCount: { type: integer }
+        actionItems:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ActionItem'
+              - type: object
+                properties:
+                  issues: { type: array, items: { $ref: '#/components/schemas/Issue' } }
+
+    DeletionImpact:
+      type: object
+      properties:
+        actionItemCount: { type: integer }
+        issueCount: { type: integer }
+        actionItems:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              description: { type: string }
+              issueCount: { type: integer }
+              issues:
+                type: array
+                description: Non-deleted issues on this action item, oldest first
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    title: { type: string }
+
+    HistoryEntry:
+      type: object
+      properties:
+        id: { type: string }
+        action: { type: string, enum: [CREATE, UPDATE, DELETE, RESTORE] }
+        field: { type: string }
+        oldValue: { type: string }
+        newValue: { type: string }
+        actor: { $ref: '#/components/schemas/UserRef' }
+        createdAt: { type: string, format: date-time }
+
+    DeletedRecord:
+      type: object
+      properties:
+        entityType: { type: string, enum: [meeting, action-item, issue] }
+        id: { type: string }
+        label: { type: string }
+        deletedAt: { type: string, format: date-time }
+        deletedBy: { $ref: '#/components/schemas/UserRef' }
+        deletionBatchId: { type: string }
+        dependentCount: { type: integer }
+
+security:
+  - sessionCookie: []
