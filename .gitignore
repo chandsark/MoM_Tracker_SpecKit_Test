@@ -6,6 +6,7 @@ coverage/
 .env
 .env.*
 !.env.example
+backend/.env
 *.db
 *.db-journal
 *.db-wal
@@ -18,3 +19,5 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+-wal
+-shm
