@@ -15,6 +15,21 @@ and soft delete with restore.
 - No database server — SQLite files are created under `backend/prisma/`
 - For end-to-end tests: `npx playwright install chromium`
 
+## Quick start (Windows PowerShell)
+
+```powershell
+.\start_web_app.ps1
+```
+
+The script does the whole setup on first run: it installs dependencies, creates `backend\.env`
+with a random session secret, applies migrations and loads the demo data. It then starts the API
+and the web app, waits until both are healthy and opens the browser. Press Ctrl+C to stop both.
+If port 3000 or 5173 is busy it uses the next free port. Logs go to `logs\api.log` and
+`logs\web.log`. Options: `-ApiPort <n>`, `-WebPort <n>`, `-NoBrowser`, `-SkipSeed`.
+
+If PowerShell refuses to run scripts, start it with
+`powershell -ExecutionPolicy Bypass -File .\start_web_app.ps1` (this applies only to that run).
+
 ## Setup
 
 ```bash
