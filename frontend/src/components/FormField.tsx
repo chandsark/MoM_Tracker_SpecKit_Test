@@ -20,8 +20,10 @@ export function FormField({ label, id, error, hint, children }: Props) {
   const errorId = `${id}-error`;
   const describedBy = [hintId, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
+    <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={id} className="field-label">
+        {label}
+      </label>
       {children({ id, 'aria-invalid': Boolean(error), 'aria-describedby': describedBy })}
       {hint && (
         <p id={hintId} className="field-hint">

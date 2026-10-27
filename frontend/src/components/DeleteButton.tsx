@@ -5,6 +5,7 @@ import { useDeleteRecord } from '../api/deleted';
 import { useDeletionImpact } from '../api/meetings';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ErrorMessage } from './ErrorMessage';
+import { useToast } from './Toast';
 
 const NOUN: Record<EntityPathSegment, string> = {
   meeting: 'meeting',
@@ -27,12 +28,12 @@ function MeetingImpact({ id }: { id: string }) {
       <p>
         This also deletes {count(actionItemCount, 'action item')} and {count(issueCount, 'issue')}:
       </p>
-      <ul>
+      <ul className="list-disc space-y-1 pl-5 text-sm">
         {actionItems.map((i) => (
           <li key={i.id}>
             {i.description}
             {i.issues.length > 0 && (
-              <ul aria-label={`Issues on ${i.description}`}>
+              <ul aria-label={`Issues on ${i.description}`} className="list-[circle] pl-5">
                 {i.issues.map((issue) => (
                   <li key={issue.id}>{issue.title}</li>
                 ))}
@@ -50,7 +51,7 @@ function ActionItemImpact({ issues }: { issues: IssueRef[] }) {
   return (
     <>
       <p>This also deletes {count(issues.length, 'issue')}:</p>
-      <ul aria-label="Issues deleted with it">
+      <ul aria-label="Issues deleted with it" className="list-disc space-y-1 pl-5 text-sm">
         {issues.map((issue) => (
           <li key={issue.id}>{issue.title}</li>
         ))}
@@ -74,6 +75,7 @@ interface Props {
 export function DeleteButton({ entityType, id, version, redirectTo, issues = [] }: Props) {
   const [open, setOpen] = useState(false);
   const del = useDeleteRecord(entityType, id);
+  const toast = useToast();
   const navigate = useNavigate();
   const noun = NOUN[entityType];
 
@@ -83,6 +85,7 @@ export function DeleteButton({ entityType, id, version, redirectTo, issues = [] 
     } catch {
       return; // shown in the dialog
     }
+    toast.success('Deleted');
     navigate(redirectTo);
   }
 
@@ -93,7 +96,7 @@ export function DeleteButton({ entityType, id, version, redirectTo, issues = [] 
 
   return (
     <>
-      <button type="button" className="danger" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn-danger" onClick={() => setOpen(true)}>
         Delete {noun}
       </button>
       <ConfirmDialog
@@ -108,7 +111,7 @@ export function DeleteButton({ entityType, id, version, redirectTo, issues = [] 
         {entityType === 'meeting' && <MeetingImpact id={id} />}
         {entityType === 'action-item' && <ActionItemImpact issues={issues} />}
         {entityType === 'issue' && <p>Nothing else is deleted with it.</p>}
-        <p className="muted">You can restore it later from Deleted items.</p>
+        <p className="text-sm text-muted">You can restore it later from Deleted items.</p>
         <ErrorMessage error={del.error} />
       </ConfirmDialog>
     </>

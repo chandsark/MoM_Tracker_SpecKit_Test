@@ -36,7 +36,10 @@ export function ActionItemForm({ onSubmit }: Props) {
   return (
     <form onSubmit={submit} noValidate className="card" aria-label="New action item">
       {formError && (
-        <p className="form-error" role="alert">
+        <p
+          className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+          role="alert"
+        >
           {formError}
         </p>
       )}
@@ -48,7 +51,7 @@ export function ActionItemForm({ onSubmit }: Props) {
       >
         {(a11y) => <textarea maxLength={2000} {...a11y} {...register('description')} />}
       </FormField>
-      <div className="row">
+      <div className="grid gap-x-4 sm:grid-cols-3">
         <FormField label="Assignee" id="item-assignee" error={fieldError(errors, 'assigneeId')}>
           {(a11y) => (
             <select {...a11y} {...register('assigneeId')}>
@@ -68,9 +71,11 @@ export function ActionItemForm({ onSubmit }: Props) {
           {(a11y) => <input type="date" {...a11y} {...register('dueDate')} />}
         </FormField>
       </div>
-      <button type="submit" disabled={isSubmitting}>
-        Add action item
-      </button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+          Add action item
+        </button>
+      </div>
     </form>
   );
 }

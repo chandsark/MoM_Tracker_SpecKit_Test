@@ -7,12 +7,13 @@ import { HistoryTab } from '../components/HistoryTab';
 import { IssueEditor } from '../components/IssueEditor';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatDateTime } from '../lib/format';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function IssueDetailPage() {
   const id = useParams().id!;
   const issue = useIssue(id);
 
-  if (issue.isPending) return <p role="status">Loading…</p>;
+  if (issue.isPending) return <LoadingSkeleton />;
   if (issue.error) return <ErrorMessage error={issue.error} />;
   const i = issue.data;
 
@@ -25,7 +26,7 @@ export function IssueDetailPage() {
           { label: i.title },
         ]}
       />
-      <div className="page-header">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1>{i.title}</h1>
         {i.permissions.canDelete && (
           <DeleteButton
@@ -36,23 +37,29 @@ export function IssueDetailPage() {
           />
         )}
       </div>
-      <div className="card stack">
-        <div className="row" style={{ alignItems: 'center' }}>
-          <StatusBadge kind="severity" value={i.severity} />
-          <StatusBadge kind="issue" value={i.status} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
+          <div className="card space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusBadge kind="severity" value={i.severity} />
+              <StatusBadge kind="issue" value={i.status} />
+            </div>
+            <p className="whitespace-pre-wrap">{i.description}</p>
+            <p className="mb-0 text-sm text-muted">
+              Raised by {i.raisedBy.name} on{' '}
+              <time dateTime={i.createdAt}>{formatDateTime(i.createdAt)}</time> · action item
+              assigned to {i.actionItem.assignee.name}
+            </p>
+          </div>
+          <IssueEditor issue={i} />
         </div>
-        <p style={{ whiteSpace: 'pre-wrap' }}>{i.description}</p>
-        <p className="muted">
-          Raised by {i.raisedBy.name} on{' '}
-          <time dateTime={i.createdAt}>{formatDateTime(i.createdAt)}</time> · action item assigned
-          to {i.actionItem.assignee.name}
-        </p>
+        <section aria-labelledby="issue-history-heading" className="card min-w-0 self-start">
+          <h2 id="issue-history-heading" className="mt-0 mb-4">
+            History
+          </h2>
+          <HistoryTab entityType="issue" id={i.id} />
+        </section>
       </div>
-      <IssueEditor issue={i} />
-      <section aria-labelledby="issue-history-heading">
-        <h2 id="issue-history-heading">History</h2>
-        <HistoryTab entityType="issue" id={i.id} />
-      </section>
     </>
   );
 }

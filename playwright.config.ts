@@ -20,7 +20,12 @@ export default defineConfig({
     {
       name: 'mobile-360',
       use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } },
-      testMatch: /a11y\.spec\.ts/,
+      testMatch: /(a11y|ui-refresh)\.spec\.ts/,
+    },
+    {
+      name: 'mobile-320',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 320, height: 640 } },
+      testMatch: /(a11y|ui-refresh)\.spec\.ts/,
     },
   ],
   webServer: [

@@ -8,6 +8,7 @@ import {
 import { useHistory } from '../api/history';
 import { formatDate, formatDateTime } from '../lib/format';
 import { ErrorMessage } from './ErrorMessage';
+import { LoadingSkeleton } from './Skeleton';
 
 const FIELD_LABELS: Record<string, string> = {
   status: 'status',
@@ -55,15 +56,18 @@ export function describeEntry(e: HistoryEntry): string {
 
 export function HistoryTab({ entityType, id }: { entityType: EntityPathSegment; id: string }) {
   const history = useHistory(entityType, id);
-  if (history.isPending) return <p role="status">Loading history…</p>;
+  if (history.isPending) return <LoadingSkeleton label="Loading history…" />;
   if (history.error) return <ErrorMessage error={history.error} />;
-  if (history.data.length === 0) return <p className="muted">No changes recorded yet.</p>;
+  if (history.data.length === 0) return <p className="text-muted">No changes recorded yet.</p>;
   return (
-    <ul className="plain-list" aria-label="Change history">
+    <ul
+      className="m-0 list-none space-y-2 border-l-2 border-border p-0 pl-4"
+      aria-label="Change history"
+    >
       {history.data.map((e) => (
-        <li key={e.id}>
+        <li key={e.id} className="text-sm">
           {describeEntry(e)}{' '}
-          <time className="muted" dateTime={e.createdAt}>
+          <time className="text-muted" dateTime={e.createdAt}>
             {formatDateTime(e.createdAt)}
           </time>
         </li>

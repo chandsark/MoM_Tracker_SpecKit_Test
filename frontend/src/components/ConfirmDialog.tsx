@@ -66,23 +66,25 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="dialog-backdrop">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
       <div
         ref={dialogRef}
-        className="dialog"
+        className="card max-h-[90vh] w-full max-w-lg overflow-y-auto shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
-        <h2 id={titleId}>{title}</h2>
-        <div>{children}</div>
-        <div className="dialog__actions">
-          <button ref={cancelRef} type="button" className="secondary" onClick={onCancel}>
+        <h2 id={titleId} className="mt-0 mb-3">
+          {title}
+        </h2>
+        <div className="text-sm">{children}</div>
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button ref={cancelRef} type="button" className="btn btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>
           <button
             type="button"
-            className={destructive ? 'danger' : undefined}
+            className={`btn ${destructive ? 'btn-danger' : 'btn-primary'}`}
             onClick={onConfirm}
             disabled={busy}
           >

@@ -9,6 +9,7 @@ import { FilterBar, ResultsSummary, useUrlFilters } from '../components/FilterBa
 import { StatusBadge } from '../components/StatusBadge';
 import { actionItemFilterFields, userOptions } from '../lib/filters';
 import { formatDate } from '../lib/format';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function ActionItemsListPage() {
   const users = useAllUsers();
@@ -26,15 +27,15 @@ export function ActionItemsListPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1>Action items</h1>
-        <a className="button secondary" href={exportHref} download>
+        <a className="btn btn-secondary" href={exportHref} download>
           Export CSV
         </a>
       </div>
       <FilterBar fields={fields} label="Filter action items" {...f} />
       <ErrorMessage error={items.error} />
-      {items.isPending && <p role="status">Loading…</p>}
+      {items.isPending && <LoadingSkeleton />}
       {items.data && items.data.total === 0 && (
         <EmptyState
           message={f.isFiltered ? 'No action items match these filters.' : 'No action items yet.'}
@@ -44,27 +45,33 @@ export function ActionItemsListPage() {
       {items.data && items.data.total > 0 && (
         <>
           <ResultsSummary total={items.data.total} noun={['action item', 'action items']} {...f} />
-          <div className="table-wrap">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table>
-              <caption className="visually-hidden">Action items, earliest due date first</caption>
+              <caption className="sr-only">Action items, earliest due date first</caption>
               <thead>
                 <tr>
                   <th scope="col">Action item</th>
                   <th scope="col">Status</th>
                   <th scope="col">Assignee</th>
                   <th scope="col">Due</th>
-                  <th scope="col">Meeting</th>
-                  <th scope="col">Open issues</th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Meeting
+                  </th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Open issues
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {items.data.items.map((item) => (
-                  <tr key={item.id} className={item.isOverdue ? 'overdue' : undefined}>
+                  <tr key={item.id} className={item.isOverdue ? 'bg-warning-bg' : undefined}>
                     <td>
-                      <Link to={`/action-items/${item.id}`}>{item.description}</Link>
+                      <Link to={`/action-items/${item.id}`} className="font-medium break-words">
+                        {item.description}
+                      </Link>
                     </td>
                     <td>
-                      <span className="row" style={{ gap: '0.25rem' }}>
+                      <span className="flex flex-wrap items-center gap-1">
                         <StatusBadge kind="action" value={item.status} />
                         {item.isOverdue && <StatusBadge kind="overdue" />}
                       </span>
@@ -72,14 +79,14 @@ export function ActionItemsListPage() {
                     <td>
                       {item.assignee.name}
                       {item.needsReassignment && (
-                        <span className="muted"> (needs reassignment)</span>
+                        <span className="text-muted"> (needs reassignment)</span>
                       )}
                     </td>
                     <td>{formatDate(item.dueDate)}</td>
-                    <td>
+                    <td className="hidden sm:table-cell">
                       <Link to={`/meetings/${item.meeting.id}`}>{item.meeting.description}</Link>
                     </td>
-                    <td>{item.openIssueCount}</td>
+                    <td className="hidden sm:table-cell">{item.openIssueCount}</td>
                   </tr>
                 ))}
               </tbody>

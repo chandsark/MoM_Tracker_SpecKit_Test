@@ -21,7 +21,11 @@ export function Tabs({ tabs, label }: { tabs: Tab[]; label: string }) {
 
   return (
     <div>
-      <div role="tablist" aria-label={label} className="tabs">
+      <div
+        role="tablist"
+        aria-label={label}
+        className="mb-4 flex gap-1 overflow-x-auto border-b border-border"
+      >
         {tabs.map((t, i) => (
           <button
             key={t.label}
@@ -36,6 +40,7 @@ export function Tabs({ tabs, label }: { tabs: Tab[]; label: string }) {
             tabIndex={i === selected ? 0 : -1}
             onClick={() => setSelected(i)}
             onKeyDown={onKeyDown}
+            className="-mb-px min-h-11 cursor-pointer border-0 border-b-2 border-solid border-transparent bg-transparent px-4 text-sm font-medium whitespace-nowrap text-muted hover:text-text aria-selected:border-primary aria-selected:text-primary"
           >
             {t.label}
           </button>

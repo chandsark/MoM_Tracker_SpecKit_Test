@@ -7,23 +7,26 @@ import { Breadcrumb } from '../components/Breadcrumb';
 import { ConflictBanner } from '../components/ConflictBanner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { MeetingForm } from '../components/MeetingForm';
+import { useToast } from '../components/Toast';
 import { formatDate } from '../lib/format';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function MeetingEditPage() {
   const id = useParams().id!;
   const meeting = useMeeting(id);
   const update = useUpdateMeeting(id);
+  const toast = useToast();
   const navigate = useNavigate();
   const [conflict, setConflict] = useState<Meeting | null>(null);
 
-  if (meeting.isPending) return <p role="status">Loading…</p>;
+  if (meeting.isPending) return <LoadingSkeleton />;
   if (meeting.error) return <ErrorMessage error={meeting.error} />;
   const m = meeting.data;
 
   return (
     <>
       <Breadcrumb items={[{ label: m.description, to: `/meetings/${id}` }, { label: 'Edit' }]} />
-      <h1>Edit meeting</h1>
+      <h1 className="mb-6">Edit meeting</h1>
       {!m.permissions.canEdit ? (
         <p>
           Only the organizer can edit this meeting.{' '}
@@ -51,6 +54,7 @@ export function MeetingEditPage() {
             onSubmit={async (values) => {
               try {
                 await update.mutateAsync({ version: m.version, ...values });
+                toast.success('Meeting updated');
                 navigate(`/meetings/${id}`);
               } catch (err) {
                 if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {

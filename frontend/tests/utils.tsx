@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 import { AuthProvider } from '../src/auth/AuthContext';
+import { ToastProvider } from '../src/components/Toast';
 
 export interface MockRequest {
   url: URL;
@@ -42,7 +43,9 @@ export function renderWithProviders(ui: ReactElement, { route = '/' }: { route?:
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[route]}>
-        <AuthProvider>{ui}</AuthProvider>
+        <AuthProvider>
+          <ToastProvider>{ui}</ToastProvider>
+        </AuthProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

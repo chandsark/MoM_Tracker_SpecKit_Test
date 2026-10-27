@@ -4,16 +4,16 @@ import { ApiError } from '../api/client';
 import { formatDateTime } from '../lib/format';
 
 export function CommentList({ comments }: { comments: Comment[] }) {
-  if (comments.length === 0) return <p className="muted">No comments yet.</p>;
+  if (comments.length === 0) return <p className="text-muted">No comments yet.</p>;
   return (
-    <ul aria-label="Comments" className="plain-list">
+    <ul aria-label="Comments" className="m-0 list-none divide-y divide-border p-0 [&>li]:py-3">
       {comments.map((c) => (
         <li key={c.id}>
-          <strong>{c.author.name}</strong>{' '}
-          <time className="muted" dateTime={c.createdAt}>
+          <strong className="text-sm">{c.author.name}</strong>{' '}
+          <time className="text-xs text-muted" dateTime={c.createdAt}>
             {formatDateTime(c.createdAt)}
           </time>
-          <p style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap' }}>{c.body}</p>
+          <p className="mt-1 mb-0 whitespace-pre-wrap">{c.body}</p>
         </li>
       ))}
     </ul>
@@ -45,9 +45,11 @@ export function CommentForm({ onSubmit }: { onSubmit: (body: string) => Promise<
   }
 
   return (
-    <form onSubmit={submit} noValidate>
-      <div className="field">
-        <label htmlFor="comment-body">Add a comment</label>
+    <form onSubmit={submit} noValidate className="mt-4">
+      <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+        <label htmlFor="comment-body" className="field-label">
+          Add a comment
+        </label>
         <textarea
           id="comment-body"
           maxLength={1000}
@@ -63,7 +65,7 @@ export function CommentForm({ onSubmit }: { onSubmit: (body: string) => Promise<
           {error}
         </p>
       </div>
-      <button type="submit" disabled={busy}>
+      <button type="submit" className="btn btn-primary" disabled={busy}>
         Post comment
       </button>
     </form>
