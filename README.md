@@ -67,7 +67,7 @@ All use the password `Password123!`.
 | `npm run lint` / `npm run format`               | ESLint / Prettier (`npm run format:check` verifies)                                   |
 | `npm run typecheck`                             | TypeScript in every workspace                                                         |
 | `npm test`                                      | Unit, contract and integration tests (Vitest) in every workspace                      |
-| `npm run test:e2e`                              | Playwright end-to-end, keyboard and accessibility tests (desktop and 360 px)          |
+| `npm run test:e2e`                              | Playwright end-to-end, keyboard and accessibility tests (desktop, 360 px and 320 px)  |
 | `npm run check`                                 | Lint, format check, typecheck, tests, OpenAPI lint and licence check — the merge gate |
 
 `npm run check` and `npm run test:e2e` must both pass before merging.
@@ -82,3 +82,11 @@ Everything for this feature is in [`specs/001-meeting-action-tracker/`](specs/00
 - [contracts/](specs/001-meeting-action-tracker/contracts/) — OpenAPI, CSV export format, UI routes
 - [quickstart.md](specs/001-meeting-action-tracker/quickstart.md) — validation scenarios V1–V7
 - [tasks.md](specs/001-meeting-action-tracker/tasks.md) — implementation task list
+
+## UI and styling
+
+The frontend uses [Tailwind CSS v4](https://tailwindcss.com/) through the `@tailwindcss/vite` plugin; there is no `tailwind.config.js`.
+
+- **Tokens and primitives** live in [`frontend/src/styles/app.css`](frontend/src/styles/app.css): semantic colours (`bg-surface`, `text-muted`, `bg-primary`, …) with light and dark values that follow the device setting, plus the shared classes `btn`, `btn-primary`, `btn-secondary`, `btn-danger`, `btn-link`, `card`, `input`, `field-label`, `field-hint`, `field-error`, `badge` and `badge-{neutral,info,warning,success,danger}`.
+- **Rules**: use the semantic tokens only. Raw palette classes such as `bg-blue-700` are not available, and `dark:` variants are not needed. Keep controls at least 44px tall (`min-h-11`), and put animations behind `motion-safe:`.
+- **Contract**: [`specs/002-tailwind-ui-refresh/contracts/design-system.md`](specs/002-tailwind-ui-refresh/contracts/design-system.md) lists every token with its verified contrast ratio. The rest of the refresh (spec, plan, tasks) is in [`specs/002-tailwind-ui-refresh/`](specs/002-tailwind-ui-refresh/).

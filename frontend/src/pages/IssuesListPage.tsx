@@ -8,6 +8,7 @@ import { FilterBar, ResultsSummary, useUrlFilters } from '../components/FilterBa
 import { StatusBadge } from '../components/StatusBadge';
 import { issueFilterFields, userOptions } from '../lib/filters';
 import { formatDateTime } from '../lib/format';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function IssuesListPage() {
   const users = useAllUsers();
@@ -20,15 +21,15 @@ export function IssuesListPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1>Issues</h1>
-        <a className="button secondary" href={exportHref} download>
+        <a className="btn btn-secondary" href={exportHref} download>
           Export CSV
         </a>
       </div>
       <FilterBar fields={fields} label="Filter issues" {...f} />
       <ErrorMessage error={issues.error} />
-      {issues.isPending && <p role="status">Loading…</p>}
+      {issues.isPending && <LoadingSkeleton />}
       {issues.data && issues.data.total === 0 && (
         <EmptyState
           message={f.isFiltered ? 'No issues match these filters.' : 'No issues raised yet.'}
@@ -38,25 +39,33 @@ export function IssuesListPage() {
       {issues.data && issues.data.total > 0 && (
         <>
           <ResultsSummary total={issues.data.total} noun={['issue', 'issues']} {...f} />
-          <div className="table-wrap">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table>
-              <caption className="visually-hidden">Issues, most severe first</caption>
+              <caption className="sr-only">Issues, most severe first</caption>
               <thead>
                 <tr>
                   <th scope="col">Issue</th>
                   <th scope="col">Severity</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Action item</th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Action item
+                  </th>
                   <th scope="col">Assignee</th>
-                  <th scope="col">Meeting</th>
-                  <th scope="col">Raised</th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Meeting
+                  </th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Raised
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {issues.data.items.map((issue) => (
                   <tr key={issue.id}>
                     <td>
-                      <Link to={`/issues/${issue.id}`}>{issue.title}</Link>
+                      <Link to={`/issues/${issue.id}`} className="font-medium break-words">
+                        {issue.title}
+                      </Link>
                     </td>
                     <td>
                       <StatusBadge kind="severity" value={issue.severity} />
@@ -64,16 +73,16 @@ export function IssuesListPage() {
                     <td>
                       <StatusBadge kind="issue" value={issue.status} />
                     </td>
-                    <td>
+                    <td className="hidden sm:table-cell">
                       <Link to={`/action-items/${issue.actionItem.id}`}>
                         {issue.actionItem.description}
                       </Link>
                     </td>
                     <td>{issue.actionItem.assignee.name}</td>
-                    <td>
+                    <td className="hidden sm:table-cell">
                       <Link to={`/meetings/${issue.meeting.id}`}>{issue.meeting.description}</Link>
                     </td>
-                    <td>
+                    <td className="hidden sm:table-cell">
                       {issue.raisedBy.name}, {formatDateTime(issue.createdAt)}
                     </td>
                   </tr>

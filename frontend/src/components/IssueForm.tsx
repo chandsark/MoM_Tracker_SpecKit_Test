@@ -30,7 +30,10 @@ export function IssueForm({ onSubmit }: { onSubmit: (values: IssueCreate) => Pro
   return (
     <form onSubmit={submit} noValidate className="card" aria-label="Raise an issue">
       {formError && (
-        <p className="form-error" role="alert">
+        <p
+          className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+          role="alert"
+        >
           {formError}
         </p>
       )}
@@ -61,9 +64,11 @@ export function IssueForm({ onSubmit }: { onSubmit: (values: IssueCreate) => Pro
           </select>
         )}
       </FormField>
-      <button type="submit" disabled={isSubmitting}>
-        Raise issue
-      </button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+          Raise issue
+        </button>
+      </div>
     </form>
   );
 }

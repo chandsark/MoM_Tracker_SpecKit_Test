@@ -27,22 +27,28 @@ export function ParticipantPicker({ value, labels, onChange, error }: Props) {
   }
 
   return (
-    <fieldset className="field" aria-describedby={error ? errorId : undefined}>
-      <legend>Participants</legend>
+    <fieldset
+      className="m-0 mb-4 flex min-w-0 flex-col gap-1.5 rounded-lg border border-border p-4"
+      aria-describedby={error ? errorId : undefined}
+    >
+      <legend className="field-label px-1">Participants</legend>
       {value.length === 0 ? (
-        <p className="muted">No participants yet.</p>
+        <p className="m-0 text-sm text-muted">No participants yet.</p>
       ) : (
-        <ul aria-label="Selected participants" className="plain-list">
+        <ul aria-label="Selected participants" className="m-0 flex list-none flex-wrap gap-2 p-0">
           {value.map((p, i) => {
             const name = p.userId
               ? (labels[p.userId] ?? 'Unknown user')
               : `${p.externalName} (external)`;
             return (
-              <li key={p.userId ?? `ext-${i}-${p.externalName}`} className="row">
+              <li
+                key={p.userId ?? `ext-${i}-${p.externalName}`}
+                className="badge badge-neutral py-0 pr-0 text-sm"
+              >
                 <span>{name}</span>
                 <button
                   type="button"
-                  className="link"
+                  className="btn-link min-w-11 justify-center px-2 text-xs"
                   aria-label={`Remove ${name}`}
                   onClick={() => onChange(value.filter((_, j) => j !== i))}
                 >
@@ -54,7 +60,9 @@ export function ParticipantPicker({ value, labels, onChange, error }: Props) {
         </ul>
       )}
 
-      <label htmlFor="participant-search">Find a registered user</label>
+      <label htmlFor="participant-search" className="field-label mt-2">
+        Find a registered user
+      </label>
       <input
         id="participant-search"
         type="search"
@@ -63,12 +71,16 @@ export function ParticipantPicker({ value, labels, onChange, error }: Props) {
         onChange={(e) => setQuery(e.target.value)}
       />
       {query.trim() && (
-        <ul aria-label="Matching users" className="plain-list" aria-live="polite">
+        <ul
+          aria-label="Matching users"
+          className="m-0 flex list-none flex-wrap gap-2 p-0"
+          aria-live="polite"
+        >
           {results.map((u) => (
             <li key={u.id}>
               <button
                 type="button"
-                className="secondary"
+                className="btn btn-secondary"
                 onClick={() => {
                   onChange([...value, { userId: u.id }], { [u.id]: u.name });
                   setQuery('');
@@ -79,13 +91,15 @@ export function ParticipantPicker({ value, labels, onChange, error }: Props) {
             </li>
           ))}
           {search.isSuccess && results.length === 0 && (
-            <li className="muted">No matching users.</li>
+            <li className="text-sm text-muted">No matching users.</li>
           )}
         </ul>
       )}
 
-      <label htmlFor="participant-external">External participant name</label>
-      <div className="row">
+      <label htmlFor="participant-external" className="field-label mt-2">
+        External participant name
+      </label>
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           id="participant-external"
           value={external}
@@ -98,7 +112,7 @@ export function ParticipantPicker({ value, labels, onChange, error }: Props) {
             }
           }}
         />
-        <button type="button" className="secondary" onClick={addExternal}>
+        <button type="button" className="btn btn-secondary shrink-0" onClick={addExternal}>
           Add external participant
         </button>
       </div>

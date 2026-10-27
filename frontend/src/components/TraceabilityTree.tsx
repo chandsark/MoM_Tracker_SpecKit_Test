@@ -11,38 +11,49 @@ function ActionItemNode({ item }: { item: TreeItem }) {
   const issuesId = `trace-issues-${item.id}`;
 
   return (
-    <li>
-      <div className="row" style={{ alignItems: 'center' }}>
-        <Link to={`/action-items/${item.id}`}>{item.description}</Link>
+    <li className="rounded-lg border border-border bg-surface p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to={`/action-items/${item.id}`}
+          className="inline-flex min-h-11 items-center font-medium break-words"
+        >
+          {item.description}
+        </Link>
         <StatusBadge kind="action" value={item.status} />
         {item.isOverdue && <StatusBadge kind="overdue" />}
-        <span className="muted">
+        <span className="text-sm text-muted">
           {item.assignee.name} · due {formatDate(item.dueDate)}
         </span>
       </div>
       {item.issues.length === 0 ? (
-        <p className="muted" style={{ margin: 0 }}>
-          No issues
-        </p>
+        <p className="m-0 text-sm text-muted">No issues</p>
       ) : (
         <>
           {/* Disclosure pattern: the name stays fixed and aria-expanded carries the state. */}
           <button
             type="button"
-            className="link"
+            className="btn-link text-sm"
             aria-expanded={expanded}
             aria-controls={issuesId}
             onClick={() => setExpanded((v) => !v)}
           >
-            Issues ({item.issues.length})
-            <span className="visually-hidden"> for {item.description}</span>
+            Issues ({item.issues.length})<span className="sr-only"> for {item.description}</span>
           </button>
           {expanded && (
-            <ul id={issuesId} aria-label={`Issues for ${item.description}`}>
+            <ul
+              id={issuesId}
+              aria-label={`Issues for ${item.description}`}
+              className="m-0 ml-2 list-none space-y-1 border-l-2 border-border pl-4"
+            >
               {item.issues.map((issue) => (
                 <li key={issue.id}>
-                  <div className="row" style={{ alignItems: 'center' }}>
-                    <Link to={`/issues/${issue.id}`}>{issue.title}</Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to={`/issues/${issue.id}`}
+                      className="inline-flex min-h-11 items-center break-words"
+                    >
+                      {issue.title}
+                    </Link>
                     <StatusBadge kind="severity" value={issue.severity} />
                     <StatusBadge kind="issue" value={issue.status} />
                   </div>
@@ -59,14 +70,14 @@ function ActionItemNode({ item }: { item: TreeItem }) {
 /** Meeting → action items → issues as nested lists (FR-021). */
 export function TraceabilityTree({ data }: { data: Traceability }) {
   return (
-    <ul className="tree" aria-label="Traceability">
+    <ul className="m-0 list-none p-0" aria-label="Traceability">
       <li>
         <strong>{data.meeting.description}</strong>{' '}
-        <span className="muted">({formatDate(data.meeting.meetingDate)})</span>
+        <span className="text-sm text-muted">({formatDate(data.meeting.meetingDate)})</span>
         {data.actionItems.length === 0 ? (
-          <p className="muted">No action items yet.</p>
+          <p className="text-muted">No action items yet.</p>
         ) : (
-          <ul aria-label="Action items">
+          <ul aria-label="Action items" className="m-0 mt-3 list-none space-y-3 p-0">
             {data.actionItems.map((item) => (
               <ActionItemNode key={item.id} item={item} />
             ))}

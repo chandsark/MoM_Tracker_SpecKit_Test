@@ -101,7 +101,7 @@ function toggle(
 export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear }: Props) {
   return (
     <form
-      className="filters card"
+      className="card mb-6 flex flex-wrap items-end gap-4"
       aria-label={label}
       role="search"
       onSubmit={(e) => e.preventDefault()}
@@ -113,8 +113,13 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
           case 'text':
           case 'date':
             return (
-              <div className="field" key={f.name}>
-                <label htmlFor={id}>{f.label}</label>
+              <div
+                className="flex w-full min-w-0 flex-col gap-1.5 sm:w-auto sm:min-w-40"
+                key={f.name}
+              >
+                <label htmlFor={id} className="field-label">
+                  {f.label}
+                </label>
                 <input
                   id={id}
                   type={f.kind === 'date' ? 'date' : 'search'}
@@ -125,8 +130,13 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
             );
           case 'select':
             return (
-              <div className="field" key={f.name}>
-                <label htmlFor={id}>{f.label}</label>
+              <div
+                className="flex w-full min-w-0 flex-col gap-1.5 sm:w-auto sm:min-w-40"
+                key={f.name}
+              >
+                <label htmlFor={id} className="field-label">
+                  {f.label}
+                </label>
                 <select
                   id={id}
                   value={value ?? ''}
@@ -144,11 +154,14 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
           case 'multi': {
             const selected = new Set(value?.split(','));
             return (
-              <fieldset className="field" key={f.name}>
-                <legend>{f.label}</legend>
-                <div className="row">
+              <fieldset className="m-0 min-w-0 border-0 p-0" key={f.name}>
+                <legend className="field-label mb-1.5 p-0">{f.label}</legend>
+                <div className="flex flex-wrap gap-x-4">
                   {f.options.map((o) => (
-                    <label key={o.value} className="checkbox">
+                    <label
+                      key={o.value}
+                      className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={selected.has(o.value)}
@@ -163,8 +176,8 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
           }
           case 'flag':
             return (
-              <div className="field" key={f.name}>
-                <label className="checkbox">
+              <div key={f.name}>
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={value === 'true'}
@@ -177,13 +190,13 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
           case 'chip':
             if (!value) return null;
             return (
-              <div className="field" key={f.name}>
-                <span className="badge">
+              <div className="flex items-center gap-1" key={f.name}>
+                <span className="badge badge-info">
                   {f.label}: {f.display ?? value}
                 </span>
                 <button
                   type="button"
-                  className="link"
+                  className="btn-link min-w-11 px-2 text-sm"
                   aria-label={`Remove ${f.label.toLowerCase()} filter`}
                   onClick={() => setFilter(f.name, undefined)}
                 >
@@ -194,8 +207,8 @@ export function FilterBar({ fields, label, filters, setFilter, isFiltered, clear
         }
       })}
       {isFiltered && (
-        <div className="field">
-          <button type="button" className="secondary" onClick={clear}>
+        <div>
+          <button type="button" className="btn btn-secondary" onClick={clear}>
             Clear filters
           </button>
         </div>
@@ -220,15 +233,15 @@ export function ResultsSummary({
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
-    <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-      <p role="status" data-testid="result-count" style={{ margin: 0 }}>
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <p role="status" data-testid="result-count" className="m-0 text-sm text-muted">
         {total} {total === 1 ? noun[0] : noun[1]}
       </p>
       {pages > 1 && (
-        <nav aria-label="Pagination" className="row" style={{ alignItems: 'center' }}>
+        <nav aria-label="Pagination" className="flex items-center gap-2 text-sm">
           <button
             type="button"
-            className="secondary"
+            className="btn btn-secondary"
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
@@ -239,7 +252,7 @@ export function ResultsSummary({
           </span>
           <button
             type="button"
-            className="secondary"
+            className="btn btn-secondary"
             disabled={page >= pages}
             onClick={() => setPage(page + 1)}
           >

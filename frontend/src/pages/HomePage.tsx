@@ -4,6 +4,8 @@ import { useIssues } from '../api/issues';
 import { ActionItemSummary } from '../components/ActionItemRow';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { IssueList } from '../components/IssueList';
+import { PlusIcon } from '../components/icons';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function HomePage() {
   const myItems = useActionItems({
@@ -16,37 +18,47 @@ export function HomePage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1>My work</h1>
-        <Link className="button" to="/meetings/new">
+        <Link className="btn btn-primary" to="/meetings/new">
+          <PlusIcon />
           New meeting
         </Link>
       </div>
 
-      <section aria-labelledby="my-items-heading" className="card">
-        <h2 id="my-items-heading">My open action items</h2>
-        <ErrorMessage error={myItems.error} />
-        {myItems.isPending && <p role="status">Loading…</p>}
-        {myItems.data && myItems.data.items.length === 0 && (
-          <p className="muted">Nothing assigned to you right now.</p>
-        )}
-        {myItems.data && myItems.data.items.length > 0 && (
-          <ul className="plain-list" aria-label="My open action items">
-            {myItems.data.items.map((item) => (
-              <li key={item.id}>
-                <ActionItemSummary item={item} showMeeting />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section aria-labelledby="my-items-heading" className="card">
+          <h2 id="my-items-heading" className="mt-0 mb-4">
+            My open action items
+          </h2>
+          <ErrorMessage error={myItems.error} />
+          {myItems.isPending && <LoadingSkeleton />}
+          {myItems.data && myItems.data.items.length === 0 && (
+            <p className="text-muted">Nothing assigned to you right now.</p>
+          )}
+          {myItems.data && myItems.data.items.length > 0 && (
+            <ul
+              className="m-0 list-none divide-y divide-border p-0 [&>li]:py-3"
+              aria-label="My open action items"
+            >
+              {myItems.data.items.map((item) => (
+                <li key={item.id}>
+                  <ActionItemSummary item={item} showMeeting />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <section aria-labelledby="my-issues-heading" className="card">
-        <h2 id="my-issues-heading">My open issues</h2>
-        <ErrorMessage error={myIssues.error} />
-        {myIssues.isPending && <p role="status">Loading…</p>}
-        {myIssues.data && <IssueList issues={myIssues.data.items} showParent />}
-      </section>
+        <section aria-labelledby="my-issues-heading" className="card">
+          <h2 id="my-issues-heading" className="mt-0 mb-4">
+            My open issues
+          </h2>
+          <ErrorMessage error={myIssues.error} />
+          {myIssues.isPending && <LoadingSkeleton />}
+          {myIssues.data && <IssueList issues={myIssues.data.items} showParent />}
+        </section>
+      </div>
     </>
   );
 }

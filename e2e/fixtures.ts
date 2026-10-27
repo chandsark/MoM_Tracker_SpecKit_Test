@@ -37,6 +37,17 @@ export async function expectNoA11yViolations(page: Page): Promise<void> {
   expect(summary, summary.join('\n')).toEqual([]);
 }
 
+export async function expectNoHorizontalScroll(page: Page): Promise<void> {
+  const { scrollWidth, viewport } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    viewport: window.innerWidth,
+  }));
+  expect(
+    scrollWidth,
+    `page is ${scrollWidth}px wide in a ${viewport}px viewport`,
+  ).toBeLessThanOrEqual(viewport);
+}
+
 export function unique(prefix: string): string {
   return `${prefix} ${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 }

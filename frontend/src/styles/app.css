@@ -1,0 +1,249 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens — specs/002-tailwind-ui-refresh/contracts/design-system.md §1.
+ * Every text/background pair below meets WCAG 2.1 AA (≥4.5:1); control borders and the focus
+ * ring meet ≥3:1. Dark values follow the device colour-scheme preference.
+ */
+:root {
+  --c-bg: #f8fafc;
+  --c-surface: #ffffff;
+  --c-text: #0f172a;
+  --c-muted: #475569;
+  --c-border: #e2e8f0;
+  --c-border-strong: #64748b;
+  --c-primary: #4338ca;
+  --c-primary-hover: #3730a3;
+  --c-primary-text: #ffffff;
+  --c-primary-soft: #eef2ff;
+  --c-danger: #b91c1c;
+  --c-danger-bg: #fef2f2;
+  --c-warning: #92400e;
+  --c-warning-bg: #fffbeb;
+  --c-success: #166534;
+  --c-success-bg: #f0fdf4;
+  --c-info: #1e40af;
+  --c-info-bg: #eff6ff;
+  --c-neutral: #334155;
+  --c-neutral-bg: #f1f5f9;
+  --c-focus: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #020617;
+    --c-surface: #0f172a;
+    --c-text: #f1f5f9;
+    --c-muted: #94a3b8;
+    --c-border: #1e293b;
+    --c-border-strong: #64748b;
+    --c-primary: #818cf8;
+    --c-primary-hover: #a5b4fc;
+    --c-primary-text: #0f172a;
+    --c-primary-soft: #1e1b4b;
+    --c-danger: #f87171;
+    --c-danger-bg: #450a0a;
+    --c-warning: #fcd34d;
+    --c-warning-bg: #451a03;
+    --c-success: #86efac;
+    --c-success-bg: #052e16;
+    --c-info: #93c5fd;
+    --c-info-bg: #172554;
+    --c-neutral: #cbd5e1;
+    --c-neutral-bg: #1e293b;
+    --c-focus: #fbbf24;
+  }
+}
+
+/* Only semantic colours exist, so raw palette classes (bg-blue-700) cannot sneak in. */
+@theme inline {
+  --color-*: initial;
+  --color-black: #000;
+  --color-white: #fff;
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-border: var(--c-border);
+  --color-border-strong: var(--c-border-strong);
+  --color-primary: var(--c-primary);
+  --color-primary-hover: var(--c-primary-hover);
+  --color-primary-text: var(--c-primary-text);
+  --color-primary-soft: var(--c-primary-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-bg: var(--c-danger-bg);
+  --color-warning: var(--c-warning);
+  --color-warning-bg: var(--c-warning-bg);
+  --color-success: var(--c-success);
+  --color-success-bg: var(--c-success-bg);
+  --color-info: var(--c-info);
+  --color-info-bg: var(--c-info-bg);
+  --color-neutral: var(--c-neutral);
+  --color-neutral-bg: var(--c-neutral-bg);
+  --color-focus: var(--c-focus);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --animate-toast-in: toast-in 150ms ease-out;
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    @apply bg-bg font-sans text-text antialiased;
+    line-height: 1.5;
+    color-scheme: light dark;
+  }
+
+  body {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  :focus-visible,
+  /* Chromium drops :focus-visible while typing between a date input's segments, and its built-in
+     calendar button takes focus without matching :focus on the input, so outline the whole control. */
+  input[type='date']:focus-within {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Tailwind's preflight drops link underlines; keep them so links never rely on colour alone. */
+  a {
+    color: var(--color-primary);
+    text-decoration-line: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* Every text control looks like the `input` primitive; :where() keeps utilities in charge. */
+  :where(input:not([type='checkbox'], [type='radio'], [type='hidden']), select, textarea) {
+    @apply min-h-11 w-full max-w-full rounded-lg border border-border-strong bg-surface px-3 text-text aria-[invalid=true]:border-danger;
+    font: inherit;
+  }
+
+  :where(textarea) {
+    @apply py-2;
+    min-height: 5rem;
+  }
+
+  /* Data tables (contracts §4): live inside an overflow-x-auto rounded container. */
+  :where(table) {
+    @apply w-full border-collapse text-sm;
+  }
+
+  :where(th) {
+    @apply bg-neutral-bg px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase;
+  }
+
+  :where(td) {
+    @apply border-t border-border px-4 py-3 align-top;
+  }
+
+  :where(input[type='checkbox'], input[type='radio']) {
+    @apply size-4 shrink-0;
+    accent-color: var(--color-primary);
+  }
+
+  h1 {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-lg font-semibold;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* Shared primitives — contracts/design-system.md §3. Combine as `btn btn-primary`. */
+@layer components {
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-transparent px-4 text-sm font-medium no-underline disabled:cursor-not-allowed disabled:opacity-60 motion-safe:transition-colors;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-text hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply border-border-strong bg-surface text-primary hover:bg-primary-soft;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-primary-text hover:opacity-90;
+  }
+
+  .btn-link {
+    @apply inline-flex min-h-11 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-primary underline-offset-2 hover:underline;
+  }
+
+  .card {
+    @apply rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-6;
+  }
+
+  .input {
+    @apply min-h-11 w-full max-w-full rounded-lg border border-border-strong bg-surface px-3 text-text aria-[invalid=true]:border-danger;
+    font: inherit;
+  }
+
+  textarea.input {
+    @apply py-2;
+    min-height: 5rem;
+  }
+
+  .field-label {
+    @apply text-sm font-semibold;
+  }
+
+  .field-hint {
+    @apply m-0 text-sm text-muted;
+  }
+
+  .field-error {
+    @apply m-0 text-sm text-danger;
+  }
+
+  .field-error:empty {
+    display: none;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap;
+  }
+
+  .badge-neutral {
+    @apply bg-neutral-bg text-neutral;
+  }
+
+  .badge-info {
+    @apply bg-info-bg text-info;
+  }
+
+  .badge-warning {
+    @apply bg-warning-bg text-warning;
+  }
+
+  .badge-success {
+    @apply bg-success-bg text-success;
+  }
+
+  .badge-danger {
+    @apply bg-danger-bg text-danger;
+  }
+}

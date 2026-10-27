@@ -95,7 +95,9 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
 
   return (
     <form onSubmit={onSubmit} className="card" aria-labelledby="editor-heading" noValidate>
-      <h2 id="editor-heading">Update progress</h2>
+      <h2 id="editor-heading" className="mt-0 mb-4">
+        Update progress
+      </h2>
       {conflict && (
         <ConflictBanner
           onReload={() => {
@@ -112,13 +114,18 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
         </ConflictBanner>
       )}
       {error && (
-        <p className="form-error" role="alert">
+        <p
+          className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+          role="alert"
+        >
           {error}
         </p>
       )}
-      <div className="row">
-        <div className="field">
-          <label htmlFor="edit-status">Status</label>
+      <div className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="edit-status" className="field-label">
+            Status
+          </label>
           <select
             id="edit-status"
             value={fields.status}
@@ -131,8 +138,10 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
             ))}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="edit-start">Start date</label>
+        <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="edit-start" className="field-label">
+            Start date
+          </label>
           <input
             id="edit-start"
             type="date"
@@ -140,8 +149,10 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
             onChange={(e) => setFields({ ...fields, startDate: e.target.value })}
           />
         </div>
-        <div className="field">
-          <label htmlFor="edit-due">Due date</label>
+        <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="edit-due" className="field-label">
+            Due date
+          </label>
           <input
             id="edit-due"
             type="date"
@@ -150,8 +161,10 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
           />
         </div>
         {item.permissions.canReassign && (
-          <div className="field">
-            <label htmlFor="edit-assignee">Assignee</label>
+          <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="edit-assignee" className="field-label">
+              Assignee
+            </label>
             <select
               id="edit-assignee"
               value={fields.assigneeId}
@@ -169,10 +182,10 @@ export function ActionItemEditor({ item }: { item: ActionItemDetail }) {
           </div>
         )}
       </div>
-      <button type="submit" disabled={update.isPending}>
+      <button type="submit" className="btn btn-primary" disabled={update.isPending}>
         Save changes
-      </button>{' '}
-      <span role="status" className="muted">
+      </button>
+      <span role="status" className="ml-3 text-sm text-muted">
         {message}
       </span>
       <ConfirmDialog

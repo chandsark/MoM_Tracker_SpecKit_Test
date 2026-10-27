@@ -5,7 +5,9 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { FilterBar, ResultsSummary, useUrlFilters } from '../components/FilterBar';
 import { meetingFilterFields, userOptions } from '../lib/filters';
+import { PlusIcon } from '../components/icons';
 import { formatDate } from '../lib/format';
+import { LoadingSkeleton } from '../components/Skeleton';
 
 export function MeetingsListPage() {
   const users = useAllUsers();
@@ -15,46 +17,54 @@ export function MeetingsListPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1>Meetings</h1>
-        <Link className="button" to="/meetings/new">
+        <Link className="btn btn-primary" to="/meetings/new">
+          <PlusIcon />
           New meeting
         </Link>
       </div>
       <FilterBar fields={fields} label="Filter meetings" {...f} />
       <ErrorMessage error={meetings.error} />
-      {meetings.isPending && <p role="status">Loading…</p>}
+      {meetings.isPending && <LoadingSkeleton />}
       {meetings.data && meetings.data.total === 0 && (
         <EmptyState
           message={f.isFiltered ? 'No meetings match these filters.' : 'No meetings yet.'}
           onClear={f.isFiltered ? f.clear : undefined}
+          action={f.isFiltered ? undefined : { label: 'New meeting', to: '/meetings/new' }}
         />
       )}
       {meetings.data && meetings.data.total > 0 && (
         <>
           <ResultsSummary total={meetings.data.total} noun={['meeting', 'meetings']} {...f} />
-          <div className="table-wrap">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
             <table>
-              <caption className="visually-hidden">Meetings, newest first</caption>
+              <caption className="sr-only">Meetings, newest first</caption>
               <thead>
                 <tr>
                   <th scope="col">Meeting</th>
                   <th scope="col">Date</th>
-                  <th scope="col">Organizer</th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Organizer
+                  </th>
                   <th scope="col">Action items</th>
-                  <th scope="col">Open issues</th>
+                  <th scope="col" className="hidden sm:table-cell">
+                    Open issues
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {meetings.data.items.map((m) => (
                   <tr key={m.id}>
                     <td>
-                      <Link to={`/meetings/${m.id}`}>{m.description}</Link>
+                      <Link to={`/meetings/${m.id}`} className="font-medium break-words">
+                        {m.description}
+                      </Link>
                     </td>
                     <td>{formatDate(m.meetingDate)}</td>
-                    <td>{m.organizer.name}</td>
+                    <td className="hidden sm:table-cell">{m.organizer.name}</td>
                     <td>{m.actionItemCount}</td>
-                    <td>{m.openIssueCount}</td>
+                    <td className="hidden sm:table-cell">{m.openIssueCount}</td>
                   </tr>
                 ))}
               </tbody>

@@ -12,18 +12,20 @@ export function ActionItemSummary({
   showMeeting?: boolean;
 }) {
   return (
-    <div className="stack" style={{ gap: '0.25rem' }}>
-      <div className="row" style={{ alignItems: 'center' }}>
-        <Link to={`/action-items/${item.id}`}>{item.description}</Link>
+    <div className="min-w-0 space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link to={`/action-items/${item.id}`} className="font-medium break-words">
+          {item.description}
+        </Link>
         <StatusBadge kind="action" value={item.status} />
         {item.isOverdue && <StatusBadge kind="overdue" />}
         {item.openIssueCount > 0 && (
-          <span className="badge badge-high">
+          <span className="badge badge-warning">
             {item.openIssueCount} open {item.openIssueCount === 1 ? 'issue' : 'issues'}
           </span>
         )}
       </div>
-      <span className="muted">
+      <span className="block text-sm text-muted">
         {item.assignee.name} · due {formatDate(item.dueDate)}
         {showMeeting && <> · from {item.meeting.description}</>}
         {item.needsReassignment && <> · needs reassignment</>}

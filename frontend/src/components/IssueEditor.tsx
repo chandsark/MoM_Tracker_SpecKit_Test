@@ -75,7 +75,9 @@ export function IssueEditor({ issue }: { issue: Issue }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="card" aria-labelledby="issue-editor-heading">
-      <h2 id="issue-editor-heading">Update issue</h2>
+      <h2 id="issue-editor-heading" className="mt-0 mb-4">
+        Update issue
+      </h2>
       {conflict && (
         <ConflictBanner
           onReload={() => {
@@ -91,12 +93,17 @@ export function IssueEditor({ issue }: { issue: Issue }) {
         </ConflictBanner>
       )}
       {error && (
-        <p className="form-error" role="alert">
+        <p
+          className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+          role="alert"
+        >
           {error}
         </p>
       )}
-      <div className="field">
-        <label htmlFor="issue-edit-title">Title</label>
+      <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+        <label htmlFor="issue-edit-title" className="field-label">
+          Title
+        </label>
         <input
           id="issue-edit-title"
           maxLength={200}
@@ -104,8 +111,10 @@ export function IssueEditor({ issue }: { issue: Issue }) {
           onChange={(e) => setFields({ ...fields, title: e.target.value })}
         />
       </div>
-      <div className="field">
-        <label htmlFor="issue-edit-description">Description</label>
+      <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+        <label htmlFor="issue-edit-description" className="field-label">
+          Description
+        </label>
         <textarea
           id="issue-edit-description"
           maxLength={2000}
@@ -113,9 +122,11 @@ export function IssueEditor({ issue }: { issue: Issue }) {
           onChange={(e) => setFields({ ...fields, description: e.target.value })}
         />
       </div>
-      <div className="row">
-        <div className="field">
-          <label htmlFor="issue-edit-severity">Severity</label>
+      <div className="grid gap-x-4 sm:grid-cols-2">
+        <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="issue-edit-severity" className="field-label">
+            Severity
+          </label>
           <select
             id="issue-edit-severity"
             value={fields.severity}
@@ -128,8 +139,10 @@ export function IssueEditor({ issue }: { issue: Issue }) {
             ))}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="issue-edit-status">Status</label>
+        <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+          <label htmlFor="issue-edit-status" className="field-label">
+            Status
+          </label>
           <select
             id="issue-edit-status"
             value={fields.status}
@@ -143,10 +156,10 @@ export function IssueEditor({ issue }: { issue: Issue }) {
           </select>
         </div>
       </div>
-      <button type="submit" disabled={update.isPending}>
+      <button type="submit" className="btn btn-primary" disabled={update.isPending}>
         Save issue
-      </button>{' '}
-      <span role="status" className="muted">
+      </button>
+      <span role="status" className="ml-3 text-sm text-muted">
         {message}
       </span>
     </form>

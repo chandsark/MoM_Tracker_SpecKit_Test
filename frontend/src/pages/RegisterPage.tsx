@@ -37,43 +37,53 @@ export function RegisterPage() {
   });
 
   return (
-    <main id="main" className="app-main">
-      <div className="card" style={{ maxWidth: '28rem', margin: '2rem auto' }}>
-        <h1>Create account</h1>
-        <form onSubmit={onSubmit} noValidate>
-          {formError && (
-            <p className="form-error" role="alert">
-              {formError}
-            </p>
-          )}
-          <FormField label="Name" id="reg-name" error={fieldError(errors, 'name')}>
-            {(a11y) => <input autoComplete="name" {...a11y} {...register('name')} />}
-          </FormField>
-          <FormField label="Email" id="reg-email" error={fieldError(errors, 'email')}>
-            {(a11y) => <input type="email" autoComplete="email" {...a11y} {...register('email')} />}
-          </FormField>
-          <FormField
-            label="Password"
-            id="reg-password"
-            hint="At least 10 characters."
-            error={fieldError(errors, 'password')}
-          >
-            {(a11y) => (
-              <input
-                type="password"
-                autoComplete="new-password"
-                {...a11y}
-                {...register('password')}
-              />
-            )}
-          </FormField>
-          <button type="submit" disabled={isSubmitting}>
-            Create account
-          </button>
-        </form>
-        <p>
-          Already registered? <Link to="/login">Sign in</Link>
+    <main id="main" className="flex min-h-dvh items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <p className="mb-6 text-center text-xl font-bold tracking-tight text-primary">
+          MoM Tracker
         </p>
+        <div className="card shadow-lg">
+          <h1 className="mb-6">Create account</h1>
+          <form onSubmit={onSubmit} noValidate>
+            {formError && (
+              <p
+                className="mb-4 rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger"
+                role="alert"
+              >
+                {formError}
+              </p>
+            )}
+            <FormField label="Name" id="reg-name" error={fieldError(errors, 'name')}>
+              {(a11y) => <input autoComplete="name" {...a11y} {...register('name')} />}
+            </FormField>
+            <FormField label="Email" id="reg-email" error={fieldError(errors, 'email')}>
+              {(a11y) => (
+                <input type="email" autoComplete="email" {...a11y} {...register('email')} />
+              )}
+            </FormField>
+            <FormField
+              label="Password"
+              id="reg-password"
+              hint="At least 10 characters."
+              error={fieldError(errors, 'password')}
+            >
+              {(a11y) => (
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  {...a11y}
+                  {...register('password')}
+                />
+              )}
+            </FormField>
+            <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+              Create account
+            </button>
+          </form>
+          <p className="mt-6 mb-0 text-center text-sm text-muted">
+            Already registered? <Link to="/login">Sign in</Link>
+          </p>
+        </div>
       </div>
     </main>
   );
